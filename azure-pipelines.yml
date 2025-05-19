@@ -1,8 +1,8 @@
 trigger:
-- main  # Or 'master' if that's your default branch
+- main  # or your default branch
 
 pool:
-  name: Default  # Self-hosted agent pool
+  name: Default  # self-hosted Ubuntu agent
 
 variables:
   buildConfiguration: 'Release'
@@ -11,7 +11,7 @@ steps:
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
-    version: '6.0.x'
+    version: '6.0.x'  # update if you're using .NET 7 or 8
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - script: dotnet restore
@@ -20,8 +20,8 @@ steps:
 - script: dotnet build --configuration $(buildConfiguration) --no-restore
   displayName: 'Build Project'
 
-#- script: dotnet test --configuration $(buildConfiguration) --no-build --verbosity normal
-# displayName: 'Run Unit Tests'
+# - script: dotnet test --configuration $(buildConfiguration) --no-build --verbosity normal
+#   displayName: 'Run Tests'
 
 - script: dotnet publish -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)
   displayName: 'Publish Application'
@@ -31,3 +31,11 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'aspnetcore-app'
     publishLocation: 'Container'
+
+- task: AzureWebApp@1
+  displayName: 'Deploy to Azure App Service'
+  inputs:
+    azureSubscription: 'aspnet-deploy-connection'  # service connection name
+    appType: 'webApp'
+    appName: 'aspnet-deploy-connection'  # Azure App Service name
+    package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
